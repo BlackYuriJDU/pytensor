@@ -646,6 +646,18 @@ class TestAsTensorVariable:
             assert as_tensor_variable(()).dtype == dtype
             assert as_tensor_variable([]).dtype == dtype
 
+    @pytest.mark.parametrize("container", [list, tuple])
+    def test_sequence_of_python_floats_follows_floatx(self, container):
+        # A list/tuple of Python floats has no dtype of its own, so it must
+        # follow the same autocasting policy as a bare float (issue #2689).
+        with config.change_flags(floatX="float32", cast_policy="numpy+floatX"):
+            assert as_tensor_variable(container([1.0, 2.0])).dtype == "float32"
+            # Sequences that carry a NumPy dtype keep it: no silent downcast.
+            assert as_tensor_variable([np.float64(1.0), 2.0]).dtype == "float64"
+            assert as_tensor_variable(np.array([1.0, 2.0])).dtype == "float64"
+        with config.change_flags(floatX="float64", cast_policy="numpy+floatX"):
+            assert as_tensor_variable(container([1.0, 2.0])).dtype == "float64"
+
     @pytest.mark.parametrize(
         ("x", "y"),
         [

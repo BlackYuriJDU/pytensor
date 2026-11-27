@@ -247,6 +247,20 @@ def convert(x, dtype=None):
             x_ = np.asarray(x)
             if x_.size == 0 and not hasattr(x, "dtype"):
                 x_ = np.asarray(x, dtype=config.floatX)
+            elif (
+                x_.dtype == "float64"
+                and isinstance(x, (list, tuple))
+                and all(
+                    isinstance(v, builtins.float) and not isinstance(v, np.floating)
+                    for v in x
+                )
+            ):
+                # A sequence of Python floats carries no dtype of its own, so
+                # it must follow the same autocasting policy as a bare float,
+                # instead of NumPy's float64 default (issue #2689). Numpy
+                # scalars stay excluded so their dtype is not silently
+                # downcast.
+                x_ = np.asarray([autocast_float(v) for v in x])
     assert issubclass(type(x_), np.ndarray | np.memmap)
     return x_
 
